@@ -44,6 +44,14 @@ public class User {
     @Column(nullable = false)
     private String role = "USER";
 
+    // Добавил проверку при установке роли
+    public void setRole(String role) {
+        if (!"ADMIN".equals(role) && !"USER".equals(role)) {
+            throw new IllegalArgumentException("Вашей роли не доступен");
+        }
+        this.role = role;
+    }
+
     @ManyToMany
     @JoinTable(
             name = "event_registrations",

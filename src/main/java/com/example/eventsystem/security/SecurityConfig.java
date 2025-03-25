@@ -43,6 +43,8 @@ public class SecurityConfig {
                 .authorizeHttpRequests(authorize ->
                         authorize
                                 .requestMatchers("/api/auth/**").permitAll()
+                                .requestMatchers("/api/users/register").permitAll() // Добавил метод register Для регистрации пользователей (доступен всем)
+                                .requestMatchers("/api/users/admin/**").hasRole("ADMIN") // добавил метод Admin для регистрации Администраторов (доступен только роли ADMIN)
                                 .anyRequest().authenticated()
                 )
                 .httpBasic(httpBasic -> {});
