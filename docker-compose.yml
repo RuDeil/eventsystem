@@ -4,6 +4,7 @@ services:
   # PostgreSQL
   db:
     image: postgres:13
+    container_name: postgres_db
     environment:
       POSTGRES_USER: event_admin
       POSTGRES_PASSWORD: event_pass
@@ -12,30 +13,37 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U event_admin -d event_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
 
   # Веб-интерфейс для БД
   adminer:
     image: adminer
     restart: always
     ports:
-    - "8081:8080"  
+      - "8081:8080"
     depends_on:
-      - db
+      db:
+        condition: service_healthy
 
-    # Сервис Java-приложения
-  demo:
-    build: .  # Собираем из Dockerfile
+  # Сервис Java-приложения
+  event_agency:
+    build: .
     container_name: java_app
     depends_on:
-      - db  # Ждём запуска PostgreSQL
+      db:
+        condition: service_healthy
     environment:
-      # Подключение к БД (используем имя сервиса "postgres" вместо localhost)
-      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/mydb
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/event_db
       SPRING_DATASOURCE_USERNAME: event_admin
       SPRING_DATASOURCE_PASSWORD: event_pass
+      SPRING_PROFILES_ACTIVE: prod  # Явное указание профиля
     ports:
-      - "8080:8080"  # Пробрасываем порт Java-приложения
-
+      - "8080:8080"
+    restart: unless-stopped
 
 volumes:
   postgres_data:
