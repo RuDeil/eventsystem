@@ -1,0 +1,68 @@
+package com.example.eventsystem.model;
+
+import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+import org.hibernate.annotations.CreationTimestamp;
+
+import java.time.LocalDateTime;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+
+//Сущность мероприятия:
+//
+//id - уникальный идентификатор
+//
+//event_date - дата и время проведения
+//
+//location - место проведения
+//
+//format - формат (ONLINE/OFFLINE)
+//
+//speakers - список спикеров (массив текста)
+//
+//status - статус (OPEN/STARTED/ARCHIVED)
+//
+//createdBy - создатель мероприятия (связь ManyToOne)
+//
+//createdAt - дата создания
+//
+//registeredUsers - множество зарегистрированных пользователей (связь ManyToMany)
+
+@Entity
+@Table(name = "events")
+@NoArgsConstructor
+@Getter
+@Setter
+public class Event {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @Column(name = "event_date", nullable = false)
+    private LocalDateTime eventDate;
+
+    private String location;
+
+    @Column(nullable = false)
+    private String format;
+
+    @Column(columnDefinition = "text[]")
+    private List<String> speakers;
+
+    @Column(nullable = false)
+    private String status = "OPEN";
+
+    @ManyToOne
+    @JoinColumn(name = "created_by", nullable = false)
+    private User createdBy;
+
+    @CreationTimestamp
+    @Column(name = "created_at", updatable = false)
+    private LocalDateTime createdAt;
+
+    @ManyToMany(mappedBy = "registeredEvents")
+    private Set<User> registeredUsers = new HashSet<>();
+}
