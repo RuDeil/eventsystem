@@ -1,10 +1,12 @@
 export interface EventDTO {
   id: number;
-  eventDate: string; // или Date, если будете преобразовывать
+  eventDate: string; // или Date, если будет преобразование
   location: string;
-  format: string;
-  speakers: string[];
+  format: 'ONLINE' | 'OFFLINE' | 'HYBRID';
   status: string;
-  createdBy: number;
-  createdAt: string;
+  speakers?: string[];
+  createdBy?: number;
+  createdAt?: string;
+  title?: string; // Добавим, если используется в бэкенде
+  description?: string; // Добавим, если используется в бэкенде
 }

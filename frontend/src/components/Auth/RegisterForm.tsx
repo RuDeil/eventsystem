@@ -1,61 +1,86 @@
-import { useFormik } from "formik";
-import * as Yup from "yup";
-import { TextField, Button } from "@mui/material";
-import { registerUser } from "../../api/users";
+// components/Auth/RegisterForm.tsx
+import { useState } from 'react';
+import { useFormik } from 'formik';
+import * as Yup from 'yup';
+import { TextField, Button, Box, Alert } from '@mui/material';
+import { registerUser } from '../../api/users';
+import { useNavigate } from 'react-router-dom';
+
+const validationSchema = Yup.object({
+  username: Yup.string()
+    .required('Логин обязателен')
+    .min(3, 'Логин должен быть не менее 3 символов'),
+  password: Yup.string()
+    .required('Пароль обязателен')
+    .min(6, 'Пароль должен быть не менее 6 символов'),
+  fullName: Yup.string()
+    .required('ФИО обязательно'),
+});
 
 const RegisterForm = () => {
+  const navigate = useNavigate();
+  const [error, setError] = useState<string | null>(null);
+
   const formik = useFormik({
     initialValues: {
-      fullName: "",
-      username: "",
-      password: "",
+      username: '',
+      password: '',
+      fullName: '',
     },
-    validationSchema: Yup.object({
-      fullName: Yup.string().required("Обязательное поле"),
-      username: Yup.string().required("Введите логин"),
-      password: Yup.string().min(6, "Пароль слишком короткий").required("Введите пароль"),
-    }),
+    validationSchema,
     onSubmit: async (values) => {
       try {
+        setError(null);
         await registerUser(values);
-        alert("Регистрация успешна!");
-      } catch (error) {
-        alert("Ошибка регистрации");
+        navigate('/login');
+      } catch (err) {
+        setError('Ошибка регистрации. Возможно, пользователь уже существует.');
       }
     },
   });
 
   return (
-    <form onSubmit={formik.handleSubmit} style={{ maxWidth: "400px", margin: "0 auto" }}>
+    <Box component="form" onSubmit={formik.handleSubmit} sx={{ maxWidth: 500 }}>
+      {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
+
       <TextField
         fullWidth
+        name="fullName"
         label="ФИО"
-        margin="normal"
-        {...formik.getFieldProps("fullName")}
+        value={formik.values.fullName}
+        onChange={formik.handleChange}
         error={formik.touched.fullName && Boolean(formik.errors.fullName)}
         helperText={formik.touched.fullName && formik.errors.fullName}
+        sx={{ mb: 2 }}
       />
+
       <TextField
         fullWidth
+        name="username"
         label="Логин"
-        margin="normal"
-        {...formik.getFieldProps("username")}
+        value={formik.values.username}
+        onChange={formik.handleChange}
         error={formik.touched.username && Boolean(formik.errors.username)}
         helperText={formik.touched.username && formik.errors.username}
+        sx={{ mb: 2 }}
       />
+
       <TextField
         fullWidth
+        name="password"
         label="Пароль"
         type="password"
-        margin="normal"
-        {...formik.getFieldProps("password")}
+        value={formik.values.password}
+        onChange={formik.handleChange}
         error={formik.touched.password && Boolean(formik.errors.password)}
         helperText={formik.touched.password && formik.errors.password}
+        sx={{ mb: 2 }}
       />
-      <Button type="submit" variant="contained" sx={{ mt: 2 }}>
+
+      <Button type="submit" variant="contained" fullWidth>
         Зарегистрироваться
       </Button>
-    </form>
+    </Box>
   );
 };
 

@@ -47,12 +47,11 @@ const LoginPage = () => {
         setError(null);
         const { token, role } = await login(values);
         
-        // Сохраняем токен и роль в localStorage
         localStorage.setItem('token', token);
         localStorage.setItem('role', role);
         
-        // Перенаправляем на страницу событий
-        navigate('/events');
+        // Перенаправляем в зависимости от роли
+        navigate(role === 'ADMIN' ? '/admin' : '/events');
       } catch (err) {
         setError('Неверный логин или пароль');
         console.error('Ошибка авторизации:', err);
