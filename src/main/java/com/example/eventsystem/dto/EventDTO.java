@@ -20,9 +20,10 @@ public class EventDTO {
     private String status;
     private Long createdBy;
     private LocalDateTime createdAt;
+    private boolean isRegistered;
 
     public EventDTO(Long id, LocalDateTime eventDate, String location, String format,
-                    List<String> speakers, String status, User createdBy, LocalDateTime createdAt) {
+                    List<String> speakers, String status, User createdBy, LocalDateTime createdAt, boolean isRegistered) {
         this.id = id;
         this.eventDate = eventDate;
         this.location = location;
@@ -31,5 +32,6 @@ public class EventDTO {
         this.status = status;
         this.createdBy = createdBy.getId();
         this.createdAt = createdAt;
+        this.isRegistered = isRegistered;
     }
 }

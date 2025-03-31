@@ -33,17 +33,14 @@ const CreateEventForm = () => {
       description: '',
       eventDate: '',
       location: '',
-      format: 'ONLINE' as 'ONLINE' | 'OFFLINE' | 'HYBRID', // Явное приведение типа
+      format: 'ONLINE' as 'ONLINE' | 'OFFLINE' | 'HYBRID',
       status: 'PLANNED',
     },
     validationSchema,
     onSubmit: async (values) => {
       try {
         setError(null);
-        await createEvent({
-          ...values,
-          format: values.format as 'ONLINE' | 'OFFLINE' | 'HYBRID',
-        });
+        await createEvent(values); // Теперь передается правильный тип
         setSuccess(true);
         formik.resetForm();
         setTimeout(() => setSuccess(false), 3000);
@@ -53,7 +50,6 @@ const CreateEventForm = () => {
       }
     },
   });
-
   return (
     <Box component="form" onSubmit={formik.handleSubmit} sx={{ maxWidth: 600 }}>
       <Typography variant="h6" sx={{ mb: 2 }}>

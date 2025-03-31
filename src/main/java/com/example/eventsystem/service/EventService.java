@@ -12,6 +12,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.HashSet;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -21,91 +22,48 @@ public class EventService {
     private final EventRepository eventRepository;
     private final UserRepository userRepository;
 
+    public List<EventDTO> getAllOpenEvents() {
+        User user = getCurrentUser();
+        return eventRepository.findByStatus("OPEN").stream()
+                .map(event -> convertToDto(event, user)) // isRegistered=false по умолчанию
+                .collect(Collectors.toList());
+    }
+
     public List<EventDTO> getAllEvents() {
-        String username = SecurityContextHolder.getContext().getAuthentication().getName();
-        User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
-
-        if (user.getRole().equals("ADMIN")) {
-            return eventRepository.findAll().stream()
-                    .map(event -> new EventDTO(
-                            event.getId(),
-                            event.getEventDate(),
-                            event.getLocation(),
-                            event.getFormat(),
-                            event.getSpeakers(),
-                            event.getStatus(),
-                            event.getCreatedBy(),
-                            event.getCreatedAt()))
-                    .collect(Collectors.toList());
-        } else {
-            return eventRepository.findByStatus("OPEN").stream()
-                    .map(event -> new EventDTO(
-                            event.getId(),
-                            event.getEventDate(),
-                            event.getLocation(),
-                            event.getFormat(),
-                            event.getSpeakers(),
-                            event.getStatus(),
-                            event.getCreatedBy(),
-                            event.getCreatedAt()))
-                    .collect(Collectors.toList());
-        }
+        User user = getCurrentUser();
+        return eventRepository.findAll().stream()
+                .map(event -> convertToDto(event, user)) // Для админа isRegistered=false
+                .collect(Collectors.toList());
     }
 
+    private User getCurrentUser() {
+        String username = SecurityContextHolder.getContext().getAuthentication().getName();
+        return userRepository.findByUsername(username)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+    }
+
+    // Метод для получения мероприятий пользователя
     public List<EventDTO> getMyEvents() {
-        String username = SecurityContextHolder.getContext().getAuthentication().getName();
-        User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
-
-        return eventRepository.findByRegisteredUsers(user).stream()
-                .map(event -> new EventDTO(
-                        event.getId(),
-                        event.getEventDate(),
-                        event.getLocation(),
-                        event.getFormat(),
-                        event.getSpeakers(),
-                        event.getStatus(),
-                        event.getCreatedBy(),
-                        event.getCreatedAt()))
+        User user = getCurrentUser();
+        return eventRepository.findByParticipantsContaining(user).stream()
+                .map(event -> convertToDto(event, user))
                 .collect(Collectors.toList());
     }
 
+    // Метод для созданных мероприятий
     public List<EventDTO> getCreatedEvents() {
-        String username = SecurityContextHolder.getContext().getAuthentication().getName();
-        User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
-
+        User user = getCurrentUser();
         return eventRepository.findByCreatedBy(user).stream()
-                .map(event -> new EventDTO(
-                        event.getId(),
-                        event.getEventDate(),
-                        event.getLocation(),
-                        event.getFormat(),
-                        event.getSpeakers(),
-                        event.getStatus(),
-                        event.getCreatedBy(),
-                        event.getCreatedAt()))
+                .map(event -> convertToDto(event, user))
                 .collect(Collectors.toList());
     }
 
-    public EventDTO createEvent(Event event) {
-        String username = SecurityContextHolder.getContext().getAuthentication().getName();
-        User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
+    @Transactional
+    public EventDTO createEvent(Event event, User user) {
         event.setCreatedBy(user);
         Event savedEvent = eventRepository.save(event);
-
-        return new EventDTO(
-                savedEvent.getId(),
-                savedEvent.getEventDate(),
-                savedEvent.getLocation(),
-                savedEvent.getFormat(),
-                savedEvent.getSpeakers(),
-                savedEvent.getStatus(),
-                savedEvent.getCreatedBy(),
-                savedEvent.getCreatedAt());
+        return convertToDto(savedEvent, user);
     }
 
     public EventDTO updateEvent(Long id, Event eventDetails) {
@@ -136,51 +94,52 @@ public class EventService {
                 updatedEvent.getSpeakers(),
                 updatedEvent.getStatus(),
                 updatedEvent.getCreatedBy(),
-                updatedEvent.getCreatedAt());
+                updatedEvent.getCreatedAt(),
+                updatedEvent.getParticipants().contains(user));
     }
 
     @Transactional
-    public void registerForEvent(Long eventId) {
-        String username = SecurityContextHolder.getContext().getAuthentication().getName();
-        User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
-
+    public EventDTO registerForEvent(Long eventId) {
+        User user = getCurrentUser();
         Event event = eventRepository.findById(eventId)
                 .orElseThrow(() -> new ResourceNotFoundException("Event not found"));
 
-        if (!event.getStatus().equals("OPEN")) {
-            throw new RuntimeException("Event is not open for registration");
+        if (event.getParticipants().contains(user)) {
+            throw new RuntimeException("User already registered");
         }
 
-        if (event.getRegisteredUsers().contains(user)) {
-            throw new RuntimeException("You are already registered for this event");
-        }
+        event.getParticipants().add(user);
+        Event updatedEvent = eventRepository.save(event);
 
-        event.getRegisteredUsers().add(user);
-        user.getRegisteredEvents().add(event);
-
-        eventRepository.save(event);
-        userRepository.save(user);
+        return convertToDto(updatedEvent, user);
     }
 
     @Transactional
     public void unregisterFromEvent(Long eventId) {
-        String username = SecurityContextHolder.getContext().getAuthentication().getName();
-        User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
-
+        User user = getCurrentUser();
         Event event = eventRepository.findById(eventId)
                 .orElseThrow(() -> new ResourceNotFoundException("Event not found"));
 
-        if (!event.getRegisteredUsers().contains(user)) {
+        if (!event.getParticipants().contains(user)) {
             throw new RuntimeException("You are not registered for this event");
         }
 
-        event.getRegisteredUsers().remove(user);
-        user.getRegisteredEvents().remove(event);
-
+        event.getParticipants().remove(user);
         eventRepository.save(event);
-        userRepository.save(user);
+    }
+    private EventDTO convertToDto(Event event, User currentUser) {
+        boolean isRegistered = event.getParticipants().contains(currentUser);
+        return new EventDTO(
+                event.getId(),
+                event.getEventDate(),
+                event.getLocation(),
+                event.getFormat(),
+                event.getSpeakers(),
+                event.getStatus(),
+                event.getCreatedBy(),
+                event.getCreatedAt(),
+                isRegistered
+        );
     }
 }
 

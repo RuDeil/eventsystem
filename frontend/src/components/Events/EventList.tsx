@@ -1,13 +1,21 @@
-// components/Events/EventList.tsx
-import { Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, Button } from "@mui/material";
+import { 
+  Table, 
+  TableBody, 
+  TableCell, 
+  TableContainer, 
+  TableHead, 
+  TableRow, 
+  Paper, 
+  Button 
+} from "@mui/material";
 import { EventDTO } from "../../types/events";
 
 interface Props {
   events: EventDTO[];
-  onRegister?: (eventId: number) => void;
+  onRegistrationToggle?: (eventId: number) => void;
 }
 
-const EventList = ({ events, onRegister }: Props) => {
+const EventList = ({ events, onRegistrationToggle }: Props) => {
   return (
     <TableContainer component={Paper}>
       <Table>
@@ -30,14 +38,21 @@ const EventList = ({ events, onRegister }: Props) => {
               <TableCell>{event.format}</TableCell>
               <TableCell>{event.status}</TableCell>
               <TableCell>
-                {onRegister && (
-                  <Button 
-                    variant="contained" 
-                    onClick={() => onRegister(event.id)}
-                  >
-                    Зарегистрироваться
-                  </Button>
-                )}
+                <Button
+                  variant="contained"
+                  color={event.registered ? "secondary" : "primary"}
+                  onClick={() => onRegistrationToggle?.(event.id)}
+                  disabled={!onRegistrationToggle}
+                  sx={{
+                    backgroundColor: event.registered ? '#9e9e9e' : undefined,
+                    '&:hover': {
+                      backgroundColor: event.registered ? '#757575' : undefined
+                    },
+                    minWidth: '180px'
+                  }}
+                >
+                  {event.registered ? "Отменить заявку" : "Зарегистрироваться"}
+                </Button>
               </TableCell>
             </TableRow>
           ))}

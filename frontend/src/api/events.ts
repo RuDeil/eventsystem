@@ -1,10 +1,9 @@
-import { EventDTO } from "../types/events";
+import { CreateEventDTO, EventDTO } from "../types/events";
 import api from "./client";
 
-export const getEvents = async (endpoint?: string): Promise<EventDTO[]> => {
+export const getEvents = async (endpoint: string = ''): Promise<EventDTO[]> => {
   try {
-    const url = endpoint ? `/api/events${endpoint}` : '/api/events';
-    const response = await api.get<EventDTO[]>(url);
+    const response = await api.get<EventDTO[]>(`/api/events${endpoint}`);
     return response.data;
   } catch (error) {
     console.error("Error fetching events:", error);
@@ -21,8 +20,18 @@ export const registerForEvent = async (eventId: number): Promise<void> => {
   }
 };
 
+// Добавляем новый метод для отмены регистрации
+export const unregisterFromEvent = async (eventId: number): Promise<void> => {
+  try {
+    await api.post(`/api/events/${eventId}/unregister`);
+  } catch (error) {
+    console.error(`Error unregistering from event ${eventId}:`, error);
+    throw new Error("Unregistration failed");
+  }
+};
+
 // Дополнительные методы для работы с событиями
-export const createEvent = async (eventData: Omit<EventDTO, 'id'>): Promise<EventDTO> => {
+export const createEvent = async (eventData: CreateEventDTO): Promise<EventDTO> => {
   try {
     const response = await api.post<EventDTO>("/api/events", eventData);
     return response.data;

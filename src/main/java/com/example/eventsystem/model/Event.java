@@ -62,7 +62,17 @@ public class Event {
     @CreationTimestamp
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
+    @ManyToMany
+    @JoinTable(
+            name = "event_participants",
+            joinColumns = @JoinColumn(name = "event_id"),
+            inverseJoinColumns = @JoinColumn(name = "user_id"))
+    private Set<User> participants = new HashSet<>();
+    public Set<User> getRegisteredUsers() {
+        return participants;
+    }
 
-    @ManyToMany(mappedBy = "registeredEvents")
-    private Set<User> registeredUsers = new HashSet<>();
+    public void setRegisteredUsers(Set<User> users) {
+        this.participants = users;
+    }
 }

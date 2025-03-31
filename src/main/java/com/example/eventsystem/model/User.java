@@ -52,12 +52,8 @@ public class User {
         this.role = role;
     }
 
-    @ManyToMany
-    @JoinTable(
-            name = "event_registrations",
-            joinColumns = @JoinColumn(name = "user_id"),
-            inverseJoinColumns = @JoinColumn(name = "event_id")
-    )
+    @ManyToMany(mappedBy = "participants")
     private Set<Event> registeredEvents = new HashSet<>();
+
 }
 

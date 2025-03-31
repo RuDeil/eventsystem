@@ -1,40 +1,65 @@
 package com.example.eventsystem.controller;
 
 import com.example.eventsystem.dto.EventDTO;
+import com.example.eventsystem.exception.ResourceNotFoundException;
 import com.example.eventsystem.model.Event;
+import com.example.eventsystem.model.User;
+import com.example.eventsystem.repository.EventRepository;
+import com.example.eventsystem.repository.UserRepository;
 import com.example.eventsystem.service.EventService;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashSet;
 import java.util.List;
 
 @RestController
 @RequestMapping("/api/events")
+@RequiredArgsConstructor
 public class EventController {
     private final EventService eventService;
-
-    public EventController(EventService eventService) {
-        this.eventService = eventService;
-    }
-
+    private final UserRepository userRepository;
+    private final EventRepository eventRepository;
     @GetMapping
     public ResponseEntity<List<EventDTO>> getAllEvents() {
-        return ResponseEntity.ok(eventService.getAllEvents());
+        String username = SecurityContextHolder.getContext().getAuthentication().getName();
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+
+        if (user.getRole().equals("ADMIN")) {
+            return ResponseEntity.ok(eventService.getAllEvents());
+        } else {
+            return ResponseEntity.ok(eventService.getAllOpenEvents());
+        }
     }
 
     @GetMapping("/my")
     public ResponseEntity<List<EventDTO>> getMyEvents() {
+        String username = SecurityContextHolder.getContext().getAuthentication().getName();
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
         return ResponseEntity.ok(eventService.getMyEvents());
     }
 
     @GetMapping("/created")
     public ResponseEntity<List<EventDTO>> getCreatedEvents() {
+        String username = SecurityContextHolder.getContext().getAuthentication().getName();
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
         return ResponseEntity.ok(eventService.getCreatedEvents());
     }
 
+
+
     @PostMapping
     public ResponseEntity<EventDTO> createEvent(@RequestBody Event event) {
-        return ResponseEntity.ok(eventService.createEvent(event));
+        String username = SecurityContextHolder.getContext().getAuthentication().getName();
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+
+        return ResponseEntity.ok(eventService.createEvent(event, user));
     }
 
     @PutMapping("/{id}")
@@ -43,9 +68,8 @@ public class EventController {
     }
 
     @PostMapping("/{eventId}/register")
-    public ResponseEntity<Void> registerForEvent(@PathVariable Long eventId) {
-        eventService.registerForEvent(eventId);
-        return ResponseEntity.ok().build();
+    public ResponseEntity<EventDTO> registerForEvent(@PathVariable Long eventId) {
+        return ResponseEntity.ok(eventService.registerForEvent(eventId));
     }
 
     @PostMapping("/{eventId}/unregister")
@@ -54,19 +78,3 @@ public class EventController {
         return ResponseEntity.ok().build();
     }
 }
-
-//Эндпоинты:
-//
-//GET /api/events - получение мероприятий (в зависимости от роли)
-//
-//GET /api/events/my - мероприятия пользователя
-//
-//GET /api/events/created - созданные мероприятия
-//
-//POST /api/events - создание мероприятия
-//
-//PUT /api/events/{id} - обновление мероприятия
-//
-//POST /api/events/{eventId}/register - регистрация
-//
-//POST /api/events/{eventId}/unregister - отмена регистрации

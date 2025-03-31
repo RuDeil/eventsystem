@@ -12,7 +12,8 @@ import java.util.Set;
 public interface EventRepository extends JpaRepository<Event, Long> {
     List<Event> findByStatus(String status);
     List<Event> findByCreatedBy(User user);
-    List<Event> findByRegisteredUsers(User user);
+    List<Event> findByParticipantsContaining(User user);
+    List<Event> findAll();
 }
 
 //Методы:
