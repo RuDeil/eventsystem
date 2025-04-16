@@ -147,9 +147,8 @@ const CreateEventForm = () => {
           onChange={formik.handleChange}
         >
           <MenuItem value="PLANNED">Запланировано</MenuItem>
-          <MenuItem value="IN_PROGRESS">В процессе</MenuItem>
+          <MenuItem value="OPEN">Открыто</MenuItem>
           <MenuItem value="COMPLETED">Завершено</MenuItem>
-          <MenuItem value="CANCELED">Отменено</MenuItem>
         </Select>
       </FormControl>
 

@@ -1,3 +1,4 @@
+import { AxiosResponse } from "axios";
 import api from "./client";
 
 interface AuthRequest {
@@ -67,4 +68,19 @@ export const logout = (): void => {
 export const getCurrentRole = (): 'USER' | 'ADMIN' | null => {
   const role = localStorage.getItem('role');
   return role === 'USER' || role === 'ADMIN' ? role : null;
+};
+
+interface RegisterRequest {
+  username: string;
+  password: string;
+  fullName: string;
+}
+
+export const register = async (data: RegisterRequest): Promise<AxiosResponse> => {
+  return api.post("/api/users/register", data, {
+    headers: {
+      'Content-Type': 'application/json',
+      'Accept': 'application/json'
+    }
+  });
 };

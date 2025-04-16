@@ -7,6 +7,7 @@ import com.example.eventsystem.model.User;
 import com.example.eventsystem.repository.EventRepository;
 import com.example.eventsystem.repository.UserRepository;
 import com.example.eventsystem.service.EventService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -54,7 +55,7 @@ public class EventController {
 
 
     @PostMapping
-    public ResponseEntity<EventDTO> createEvent(@RequestBody Event event) {
+    public ResponseEntity<EventDTO> createEvent(@RequestBody @Valid Event event) {
         String username = SecurityContextHolder.getContext().getAuthentication().getName();
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));

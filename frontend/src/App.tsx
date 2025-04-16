@@ -17,6 +17,7 @@ function App() {
         // Добавьте что-то вроде этого в ваш основной роутер
 <Route path="/register" element={<RegisterPage />} />
 <Route path="/admin" element={<AdminPage />} />
+<Route path="/register" element={<RegisterPage />} />
         {/* Защищённые маршруты */}
         <Route element={<PrivateRoute />}>
           <Route path="/events" element={<EventsPage />} />

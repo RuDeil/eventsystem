@@ -2,19 +2,17 @@ import { useState } from 'react';
 import { useFormik } from 'formik';
 import * as Yup from 'yup';
 import { useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { 
   TextField, 
   Button, 
   Box, 
   Typography, 
-  Container, 
   Paper, 
-  Alert 
+  Alert
 } from '@mui/material';
 import { login } from '../api/auth';
 
-// Схема валидации формы
 const validationSchema = Yup.object({
   username: Yup.string()
     .required('Логин обязателен')
@@ -26,15 +24,13 @@ const validationSchema = Yup.object({
 
 const LoginPage = () => {
   const navigate = useNavigate();
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    // Если уже авторизован - редирект на события
     if (localStorage.getItem('token')) {
       navigate('/events');
     }
   }, [navigate]);
-
-  const [error, setError] = useState<string | null>(null);
 
   const formik = useFormik({
     initialValues: {
@@ -50,7 +46,6 @@ const LoginPage = () => {
         localStorage.setItem('token', token);
         localStorage.setItem('role', role);
         
-        // Перенаправляем в зависимости от роли
         navigate(role === 'ADMIN' ? '/admin' : '/events');
       } catch (err) {
         setError('Неверный логин или пароль');
@@ -60,17 +55,23 @@ const LoginPage = () => {
   });
 
   return (
-    <Container maxWidth="sm">
-      <Box
-        sx={{
-          marginTop: 8,
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-        }}
-      >
-        <Paper elevation={3} sx={{ padding: 4, width: '100%' }}>
-          <Typography component="h1" variant="h5" sx={{ mb: 3 }}>
+    <Box
+      sx={{
+        minHeight: '100vh',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        background: 'linear-gradient(135deg, #FFF8F0 0%, #EFEBE9 100%)',
+        p: 2
+      }}
+    >
+      <Box sx={{ maxWidth: 500, width: '100%' }}>
+      <Paper elevation={3} sx={{ 
+        padding: 4,
+        background: 'rgba(255, 255, 255, 0.9)',
+        borderRadius: '16px'
+      }}>
+          <Typography component="h1" variant="h5" align="center" sx={{ mb: 3 }}>
             Вход в систему
           </Typography>
           
@@ -117,10 +118,17 @@ const LoginPage = () => {
             >
               {formik.isSubmitting ? 'Вход...' : 'Войти'}
             </Button>
+
+            <Typography variant="body2" align="center">
+              Нет аккаунта?{' '}
+              <Link to="/register" style={{ color: '#1976d2' }}>
+                Зарегистрируйтесь
+              </Link>
+            </Typography>
           </form>
         </Paper>
       </Box>
-    </Container>
+    </Box>
   );
 };
 

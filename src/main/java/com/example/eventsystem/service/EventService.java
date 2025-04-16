@@ -7,6 +7,7 @@ import com.example.eventsystem.model.User;
 import com.example.eventsystem.repository.EventRepository;
 import com.example.eventsystem.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -61,11 +62,27 @@ public class EventService {
 
     @Transactional
     public EventDTO createEvent(Event event, User user) {
+        if (event.getTitle() == null || event.getTitle().isBlank()) {
+            throw new IllegalArgumentException("Название мероприятия обязательно");
+        }
         event.setCreatedBy(user);
+        event.updateStatusBasedOnDate(); // Вызываем вручную при создании
         Event savedEvent = eventRepository.save(event);
         return convertToDto(savedEvent, user);
     }
+    @Scheduled(cron = "0 * * * * *") // Проверка каждую минуту
+    public void updateEventsStatuses() {
+        List<Event> events = eventRepository.findByStatusIn(List.of("OPEN"));
 
+        events.forEach(event -> {
+            String oldStatus = event.getStatus();
+            event.updateStatusBasedOnDate();
+
+            if (!oldStatus.equals(event.getStatus())) {
+                eventRepository.save(event);
+            }
+        });
+    }
     public EventDTO updateEvent(Long id, Event eventDetails) {
         Event event = eventRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Event not found"));
@@ -88,6 +105,7 @@ public class EventService {
 
         return new EventDTO(
                 updatedEvent.getId(),
+                updatedEvent.getTitle(),
                 updatedEvent.getEventDate(),
                 updatedEvent.getLocation(),
                 updatedEvent.getFormat(),
@@ -131,6 +149,7 @@ public class EventService {
         boolean isRegistered = event.getParticipants().contains(currentUser);
         return new EventDTO(
                 event.getId(),
+                event.getTitle(),
                 event.getEventDate(),
                 event.getLocation(),
                 event.getFormat(),

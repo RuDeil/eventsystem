@@ -13,6 +13,7 @@ import java.util.List;
 @Setter
 public class EventDTO {
     private Long id;
+    private String title;
     private LocalDateTime eventDate;
     private String location;
     private String format;
@@ -22,9 +23,10 @@ public class EventDTO {
     private LocalDateTime createdAt;
     private boolean isRegistered;
 
-    public EventDTO(Long id, LocalDateTime eventDate, String location, String format,
+    public EventDTO(Long id, String title, LocalDateTime eventDate, String location, String format,
                     List<String> speakers, String status, User createdBy, LocalDateTime createdAt, boolean isRegistered) {
         this.id = id;
+        this.title = title;
         this.eventDate = eventDate;
         this.location = location;
         this.format = format;

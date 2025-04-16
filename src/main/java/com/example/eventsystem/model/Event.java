@@ -41,6 +41,9 @@ public class Event {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(nullable = false) // Обязательное поле
+    private String title; // Добавляем название мероприятия
+
     @Column(name = "event_date", nullable = false)
     private LocalDateTime eventDate;
 
@@ -74,5 +77,25 @@ public class Event {
 
     public void setRegisteredUsers(Set<User> users) {
         this.participants = users;
+    }
+    public void setEventDate(LocalDateTime eventDate) {
+        this.eventDate = eventDate;
+        updateStatusBasedOnDate(); // Автоматически обновляем статус
+    }
+
+    public void updateStatusBasedOnDate() {
+        if (this.eventDate == null) {
+            this.status = "DRAFT";
+            return;
+        }
+
+        LocalDateTime now = LocalDateTime.now();
+        if (this.eventDate.isAfter(now)) {
+            this.status = "OPEN"; // Предстоящее
+        } else if (this.eventDate.isBefore(now)) {
+            this.status = "COMPLETED"; // Завершенное
+        } else {
+            this.status = "ACTIVE"; // Идет прямо сейчас
+        }
     }
 }

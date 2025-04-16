@@ -1,10 +1,15 @@
-// components/Auth/RegisterForm.tsx
 import { useState } from 'react';
 import { useFormik } from 'formik';
 import * as Yup from 'yup';
-import { TextField, Button, Box, Alert } from '@mui/material';
-import { registerUser } from '../../api/users';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
+import { 
+  TextField, 
+  Button, 
+  Box, 
+  Typography,
+  Alert 
+} from '@mui/material';
+import { register } from '../../api/auth';
 
 const validationSchema = Yup.object({
   username: Yup.string()
@@ -17,9 +22,10 @@ const validationSchema = Yup.object({
     .required('ФИО обязательно'),
 });
 
-const RegisterForm = () => {
+const RegistrationForm = () => {
   const navigate = useNavigate();
   const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState(false);
 
   const formik = useFormik({
     initialValues: {
@@ -31,17 +37,48 @@ const RegisterForm = () => {
     onSubmit: async (values) => {
       try {
         setError(null);
-        await registerUser(values);
-        navigate('/login');
-      } catch (err) {
-        setError('Ошибка регистрации. Возможно, пользователь уже существует.');
+        const response = await register(values);
+        
+        // Проверяем статус ответа
+        if (response.status === 200 || response.status === 201) {
+          setSuccess(true);
+          setTimeout(() => navigate('/login'), 2000);
+        } else {
+          setError('Ошибка регистрации');
+        }
+      } catch (err: any) {
+        setError(err.response?.data?.message || 'Ошибка регистрации. Попробуйте ещё раз.');
       }
     },
   });
-
   return (
-    <Box component="form" onSubmit={formik.handleSubmit} sx={{ maxWidth: 500 }}>
-      {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
+    <Box
+      component="form"
+      onSubmit={formik.handleSubmit}
+      sx={{
+        maxWidth: 500,
+        mx: 'auto',
+        p: 3,
+        bgcolor: 'background.paper',
+        borderRadius: 2,
+        boxShadow: 3
+      }}
+    >
+      <Typography variant="h5" align="center" gutterBottom>
+        Регистрация
+      </Typography>
+
+      {success && (
+        <Alert severity="success" sx={{ mb: 2 }}>
+          Регистрация прошла успешно! Перенаправляем на страницу входа...
+        </Alert>
+      )}
+
+      {error && !success && (
+        <Alert severity="error" sx={{ mb: 2 }}>
+          {error}
+        </Alert>
+      )}
 
       <TextField
         fullWidth
@@ -77,11 +114,26 @@ const RegisterForm = () => {
         sx={{ mb: 2 }}
       />
 
-      <Button type="submit" variant="contained" fullWidth>
-        Зарегистрироваться
+      <Button 
+        type="submit" 
+        variant="contained" 
+        fullWidth
+        disabled={formik.isSubmitting}
+        sx={{ mb: 2 }}
+      >
+        {formik.isSubmitting ? 'Регистрация...' : 'Зарегистрироваться'}
+      </Button>
+
+      <Button 
+        variant="outlined" 
+        fullWidth
+        component={Link}
+        to="/login"
+      >
+        Назад к входу
       </Button>
     </Box>
   );
 };
 
-export default RegisterForm;
+export default RegistrationForm;
