@@ -12,10 +12,18 @@ import { EventDTO } from "../../types/events";
 
 interface Props {
   events: EventDTO[];
-  onRegistrationToggle?: (eventId: number) => void;
+  onRegistrationToggle: (eventId: number, registered: boolean) => Promise<void>;
 }
 
 const EventList = ({ events, onRegistrationToggle }: Props) => {
+  const handleRegistration = async (eventId: number, registered: boolean) => {
+    try {
+      await onRegistrationToggle(eventId, registered);
+    } catch (error) {
+      console.error('Ошибка при изменении статуса регистрации:', error);
+    }
+  };
+
   return (
     <TableContainer component={Paper}>
       <Table>
@@ -33,7 +41,7 @@ const EventList = ({ events, onRegistrationToggle }: Props) => {
           {events.map((event) => (
             <TableRow key={event.id}>
               <TableCell>{event.title || 'Без названия'}</TableCell>
-              <TableCell>{new Date(event.eventDate).toLocaleString()}</TableCell>
+              <TableCell>{new Date(event.startTime).toLocaleString()}</TableCell>
               <TableCell>{event.location}</TableCell>
               <TableCell>{event.format}</TableCell>
               <TableCell>{event.status}</TableCell>
@@ -41,17 +49,17 @@ const EventList = ({ events, onRegistrationToggle }: Props) => {
                 <Button
                   variant="contained"
                   color={event.registered ? "secondary" : "primary"}
-                  onClick={() => onRegistrationToggle?.(event.id)}
-                  disabled={!onRegistrationToggle}
+                  onClick={() => handleRegistration(event.id, event.registered)}
                   sx={{
-                    backgroundColor: event.registered ? '#9e9e9e' : undefined,
+                    backgroundColor: event.registered ? '#f44336' : '#4caf50',
                     '&:hover': {
-                      backgroundColor: event.registered ? '#757575' : undefined
+                      backgroundColor: event.registered ? '#d32f2f' : '#388e3c'
                     },
-                    minWidth: '180px'
+                    minWidth: '180px',
+                    color: 'white'
                   }}
                 >
-                  {event.registered ? "Отменить заявку" : "Зарегистрироваться"}
+                  {event.registered ? "ОТМЕНИТЬ РЕГИСТРАЦИЮ" : "ЗАРЕГИСТРИРОВАТЬСЯ"}
                 </Button>
               </TableCell>
             </TableRow>

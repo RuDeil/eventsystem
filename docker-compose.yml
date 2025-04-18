@@ -1,7 +1,7 @@
 services:
   # PostgreSQL
   db:
-    image: postgres:13
+    image: postgres:15
     container_name: postgres_db
     environment:
       POSTGRES_USER: event_admin
@@ -38,12 +38,19 @@ services:
       SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/event_db
       SPRING_DATASOURCE_USERNAME: event_admin
       SPRING_DATASOURCE_PASSWORD: event_pass
-      SPRING_PROFILES_ACTIVE: prod  # Явное указание профиля
+      SPRING_PROFILES_ACTIVE: prod
+      SPRING_FLYWAY_ENABLED: "true"  
+      SPRING_FLYWAY_BASELINE_ON_MIGRATE: "true"  
+      JAVA_OPTS: "-Xmx512m -Xms256m"
     ports:
       - "8080:8080"
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
-  # Фронтенд-приложение
   frontend:
     build: 
       context: ./frontend

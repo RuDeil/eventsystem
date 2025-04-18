@@ -55,12 +55,18 @@ public class EventController {
 
 
     @PostMapping
-    public ResponseEntity<EventDTO> createEvent(@RequestBody @Valid Event event) {
+    public ResponseEntity<EventDTO> createEvent(@RequestBody @Valid EventDTO eventDTO) {
+        if (eventDTO.getCategory() == null) {
+            throw new IllegalArgumentException("Категория обязательна");
+        }
+        if (eventDTO.getStatus() == null) {
+            eventDTO.setStatus("OPEN");
+        }
         String username = SecurityContextHolder.getContext().getAuthentication().getName();
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
-        return ResponseEntity.ok(eventService.createEvent(event, user));
+        return ResponseEntity.ok(eventService.createEvent(eventDTO, user));
     }
 
     @PutMapping("/{id}")

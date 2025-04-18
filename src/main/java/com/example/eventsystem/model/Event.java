@@ -44,8 +44,16 @@ public class Event {
     @Column(nullable = false) // Обязательное поле
     private String title; // Добавляем название мероприятия
 
-    @Column(name = "event_date", nullable = false)
-    private LocalDateTime eventDate;
+    @Column(name = "start_time", nullable = false)
+    private LocalDateTime startTime;
+
+    private String description;       // Добавлено
+    @Column(nullable = false)
+    private String category;
+    private String onlineLink;       // Добавлено
+    private LocalDateTime endTime;   // Добавлено
+    private Integer maxParticipants; // Добавлено
+    private Boolean isCancellable;   // Добавлено
 
     private String location;
 
@@ -55,8 +63,8 @@ public class Event {
     @Column(columnDefinition = "text[]")
     private List<String> speakers;
 
-    @Column(nullable = false)
-    private String status = "OPEN";
+    @Column(columnDefinition = "varchar(20) not null default 'PLANNED'")
+    private String status;
 
     @ManyToOne
     @JoinColumn(name = "created_by", nullable = false)
@@ -78,21 +86,21 @@ public class Event {
     public void setRegisteredUsers(Set<User> users) {
         this.participants = users;
     }
-    public void setEventDate(LocalDateTime eventDate) {
-        this.eventDate = eventDate;
+    public void setStartTime(LocalDateTime startTime) {
+        this.startTime = startTime;
         updateStatusBasedOnDate(); // Автоматически обновляем статус
     }
 
     public void updateStatusBasedOnDate() {
-        if (this.eventDate == null) {
+        if (this.startTime == null) {
             this.status = "DRAFT";
             return;
         }
 
         LocalDateTime now = LocalDateTime.now();
-        if (this.eventDate.isAfter(now)) {
+        if (this.startTime.isAfter(now)) {
             this.status = "OPEN"; // Предстоящее
-        } else if (this.eventDate.isBefore(now)) {
+        } else if (this.startTime.isBefore(now)) {
             this.status = "COMPLETED"; // Завершенное
         } else {
             this.status = "ACTIVE"; // Идет прямо сейчас

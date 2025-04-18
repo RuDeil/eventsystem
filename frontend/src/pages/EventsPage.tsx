@@ -30,31 +30,29 @@ const EventsPage = () => {
     loadEvents();
   }, []);
 
-  const handleRegistrationToggle = async (eventId: number) => {
-    try {
-      const event = events.find(e => e.id === eventId);
-      if (!event) return;
-
-      if (event.registered) {
-        await unregisterFromEvent(eventId);
-        setEvents(prev => prev.map(e => 
-          e.id === eventId ? { ...e, registered: false } : e
-        ));
-      } else {
-        await registerForEvent(eventId);
-        setEvents(prev => prev.map(e => 
-          e.id === eventId ? { ...e, registered: true } : e
-        ));
-      }
-    } catch (error) {
-      console.error("Ошибка изменения статуса регистрации:", error);
-    }
-  };
-
+  // Добавляем недостающую функцию toggleViewMode
   const toggleViewMode = () => {
     const newMode = viewMode === 'all' ? 'my' : 'all';
     setViewMode(newMode);
     loadEvents(newMode);
+  };
+
+  const handleRegistrationToggle = async (eventId: number, registered: boolean) => {
+    if (role !== 'USER') return;
+    
+    try {
+      if (registered) {
+        await unregisterFromEvent(eventId);
+      } else {
+        await registerForEvent(eventId);
+      }
+      
+      setEvents(prev => prev.map(e => 
+        e.id === eventId ? { ...e, registered: !registered } : e
+      ));
+    } catch (error) {
+      console.error("Ошибка изменения статуса регистрации:", error);
+    }
   };
 
   return (
@@ -89,7 +87,7 @@ const EventsPage = () => {
 
         <EventList 
           events={events}
-          onRegistrationToggle={role === 'USER' ? handleRegistrationToggle : undefined}
+          onRegistrationToggle={handleRegistrationToggle}
         />
       </Paper>
     </Box>

@@ -12,8 +12,6 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
-import java.util.HashSet;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -23,27 +21,28 @@ public class EventService {
     private final EventRepository eventRepository;
     private final UserRepository userRepository;
 
-    public List<EventDTO> getAllOpenEvents() {
-        User user = getCurrentUser();
-        return eventRepository.findByStatus("OPEN").stream()
-                .map(event -> convertToDto(event, user)) // isRegistered=false по умолчанию
-                .collect(Collectors.toList());
-    }
-
-    public List<EventDTO> getAllEvents() {
-        User user = getCurrentUser();
-        return eventRepository.findAll().stream()
-                .map(event -> convertToDto(event, user)) // Для админа isRegistered=false
-                .collect(Collectors.toList());
-    }
-
+    // Получение текущего пользователя
     private User getCurrentUser() {
         String username = SecurityContextHolder.getContext().getAuthentication().getName();
         return userRepository.findByUsername(username)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
     }
 
-    // Метод для получения мероприятий пользователя
+    // Основные методы получения событий
+    public List<EventDTO> getAllOpenEvents() {
+        User user = getCurrentUser();
+        return eventRepository.findByStatus("OPEN").stream()
+                .map(event -> convertToDto(event, user))
+                .collect(Collectors.toList());
+    }
+
+    public List<EventDTO> getAllEvents() {
+        User user = getCurrentUser();
+        return eventRepository.findAll().stream()
+                .map(event -> convertToDto(event, user))
+                .collect(Collectors.toList());
+    }
+
     public List<EventDTO> getMyEvents() {
         User user = getCurrentUser();
         return eventRepository.findByParticipantsContaining(user).stream()
@@ -51,7 +50,6 @@ public class EventService {
                 .collect(Collectors.toList());
     }
 
-    // Метод для созданных мероприятий
     public List<EventDTO> getCreatedEvents() {
         User user = getCurrentUser();
         return eventRepository.findByCreatedBy(user).stream()
@@ -59,63 +57,59 @@ public class EventService {
                 .collect(Collectors.toList());
     }
 
-
+    // Создание события
     @Transactional
-    public EventDTO createEvent(Event event, User user) {
-        if (event.getTitle() == null || event.getTitle().isBlank()) {
-            throw new IllegalArgumentException("Название мероприятия обязательно");
-        }
+    public EventDTO createEvent(EventDTO eventDTO, User user) {
+        Event event = new Event();
+        event.setTitle(eventDTO.getTitle());
+        event.setDescription(eventDTO.getDescription());
+        event.setStartTime(eventDTO.getStartTime());
+        event.setEndTime(eventDTO.getEndTime());
+        event.setCategory(eventDTO.getCategory());
+        event.setLocation(eventDTO.getLocation());
+        event.setFormat(eventDTO.getFormat());
+        event.setOnlineLink(eventDTO.getOnlineLink());
+        event.setMaxParticipants(eventDTO.getMaxParticipants());
+        event.setIsCancellable(eventDTO.getIsCancellable());
+        event.setSpeakers(eventDTO.getSpeakers());
+        event.setStatus(eventDTO.getStatus());
         event.setCreatedBy(user);
-        event.updateStatusBasedOnDate(); // Вызываем вручную при создании
+
+        event.updateStatusBasedOnDate();
         Event savedEvent = eventRepository.save(event);
+
         return convertToDto(savedEvent, user);
     }
-    @Scheduled(cron = "0 * * * * *") // Проверка каждую минуту
-    public void updateEventsStatuses() {
-        List<Event> events = eventRepository.findByStatusIn(List.of("OPEN"));
 
-        events.forEach(event -> {
-            String oldStatus = event.getStatus();
-            event.updateStatusBasedOnDate();
-
-            if (!oldStatus.equals(event.getStatus())) {
-                eventRepository.save(event);
-            }
-        });
-    }
-    public EventDTO updateEvent(Long id, Event eventDetails) {
+    // Обновление события
+    @Transactional
+    public EventDTO updateEvent(Long id, Event eventDTO) {
         Event event = eventRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Event not found"));
 
-        String username = SecurityContextHolder.getContext().getAuthentication().getName();
-        User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
-
+        User user = getCurrentUser();
         if (!event.getCreatedBy().getId().equals(user.getId()) && !user.getRole().equals("ADMIN")) {
             throw new RuntimeException("You are not authorized to update this event");
         }
 
-        event.setEventDate(eventDetails.getEventDate());
-        event.setLocation(eventDetails.getLocation());
-        event.setFormat(eventDetails.getFormat());
-        event.setSpeakers(eventDetails.getSpeakers());
-        event.setStatus(eventDetails.getStatus());
+        event.setTitle(eventDTO.getTitle());
+        event.setDescription(eventDTO.getDescription());
+        event.setCategory(eventDTO.getCategory());
+        event.setStartTime(eventDTO.getStartTime());
+        event.setEndTime(eventDTO.getEndTime());
+        event.setLocation(eventDTO.getLocation());
+        event.setFormat(eventDTO.getFormat());
+        event.setOnlineLink(eventDTO.getOnlineLink());
+        event.setMaxParticipants(eventDTO.getMaxParticipants());
+        event.setIsCancellable(eventDTO.getIsCancellable());
+        event.setSpeakers(eventDTO.getSpeakers());
+        event.setStatus(eventDTO.getStatus());
 
         Event updatedEvent = eventRepository.save(event);
-
-        return new EventDTO(
-                updatedEvent.getId(),
-                updatedEvent.getTitle(),
-                updatedEvent.getEventDate(),
-                updatedEvent.getLocation(),
-                updatedEvent.getFormat(),
-                updatedEvent.getSpeakers(),
-                updatedEvent.getStatus(),
-                updatedEvent.getCreatedBy(),
-                updatedEvent.getCreatedAt(),
-                updatedEvent.getParticipants().contains(user));
+        return convertToDto(updatedEvent, user);
     }
 
+    // Регистрация/отмена регистрации
     @Transactional
     public EventDTO registerForEvent(Long eventId) {
         User user = getCurrentUser();
@@ -128,7 +122,6 @@ public class EventService {
 
         event.getParticipants().add(user);
         Event updatedEvent = eventRepository.save(event);
-
         return convertToDto(updatedEvent, user);
     }
 
@@ -145,39 +138,39 @@ public class EventService {
         event.getParticipants().remove(user);
         eventRepository.save(event);
     }
+
+    // Автоматическое обновление статусов
+    @Scheduled(cron = "0 * * * * *")
+    public void updateEventsStatuses() {
+        List<Event> events = eventRepository.findByStatusIn(List.of("OPEN", "ACTIVE"));
+        events.forEach(event -> {
+            String oldStatus = event.getStatus();
+            event.updateStatusBasedOnDate();
+            if (!oldStatus.equals(event.getStatus())) {
+                eventRepository.save(event);
+            }
+        });
+    }
+
+    // Преобразование Entity в DTO
     private EventDTO convertToDto(Event event, User currentUser) {
-        boolean isRegistered = event.getParticipants().contains(currentUser);
         return new EventDTO(
                 event.getId(),
                 event.getTitle(),
-                event.getEventDate(),
+                event.getDescription(),
+                event.getCategory(),
+                event.getStartTime(),
+                event.getEndTime(),
                 event.getLocation(),
                 event.getFormat(),
+                event.getOnlineLink(),
+                event.getMaxParticipants(),
+                event.getIsCancellable(),
                 event.getSpeakers(),
                 event.getStatus(),
                 event.getCreatedBy(),
                 event.getCreatedAt(),
-                isRegistered
+                event.getParticipants().contains(currentUser)
         );
     }
 }
-
-//Основная бизнес-логика:
-//
-//getAllEvents():
-//
-//Для ADMIN: возвращает все мероприятия
-//
-//Для USER: только OPEN мероприятия
-//
-//getMyEvents(): мероприятия, на которые зарегистрирован текущий пользователь
-//
-//getCreatedEvents(): мероприятия, созданные текущим пользователем
-//
-//createEvent(): создание нового мероприятия (требует ADMIN)
-//
-//updateEvent(): обновление мероприятия (только создатель или ADMIN)
-//
-//registerForEvent(): регистрация на OPEN мероприятие
-//
-//unregisterFromEvent(): отмена регистрации
